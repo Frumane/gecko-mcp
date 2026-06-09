@@ -13,12 +13,13 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { FloorpClient, type TabInfo } from "./floorp-client.js";
 import { realType, realKey, realClear } from "./os-input.js";
+import { launchFloorp } from "./launch.js";
 
 const client = new FloorpClient();
 
 const server = new McpServer({
   name: "floorp-mcp",
-  version: "0.4.0",
+  version: "0.5.0",
 });
 
 // -- helpers ------------------------------------------------------------------
@@ -260,18 +261,40 @@ server.tool(
 
 server.tool(
   "click",
-  "Click an element by CSS selector. Targets the active tab unless a browserId is given.",
+  "Click an element by CSS selector OR by a `ref` (fingerprint) from `snapshot`. Auto-scrolls the element into view first (fixes off-screen 'not actionable'). Targets the active tab unless a browserId is given.",
   {
     selector: z
       .string()
-      .describe('CSS selector of the element to click, e.g. "button[type=submit]" or "a.login".'),
+      .optional()
+      .describe('CSS selector, e.g. "button[type=submit]" or "a.login".'),
+    ref: z
+      .string()
+      .optional()
+      .describe('A fingerprint ref from `snapshot` (the value after "fp:"), as an alternative to selector.'),
     browserId: z.string().optional().describe("Target tab (from list_tabs). Defaults to active."),
     button: z.enum(["left", "right", "middle"]).optional().describe("Mouse button. Default: left."),
   },
-  async ({ selector, browserId, button }) => {
+  async ({ selector, ref, browserId, button }) => {
     try {
-      await withAttachedTab(browserId, (id) => client.click(id, selector, { button }));
-      return textResult(`Clicked: ${selector}`);
+      if (!selector && !ref) return errorResult("Provide a `selector` or a `ref`.");
+      await withAttachedTab(browserId, (id) => client.click(id, selector, { button, fingerprint: ref }));
+      return textResult(`Clicked: ${selector ?? `ref ${ref}`}`);
+    } catch (err) {
+      return errorResult((err as Error).message);
+    }
+  },
+);
+
+server.tool(
+  "snapshot",
+  "Capture a structured snapshot of a tab: clean Markdown with inline fingerprint refs (`<!--fp:...-->`) and an 'Element Selector Map' (fp | tag | text). Use this instead of read_page+grep to locate elements, then pass a `ref` to `click`. Targets the active tab unless a browserId is given.",
+  {
+    browserId: z.string().optional().describe("Target tab (from list_tabs). Defaults to active."),
+  },
+  async ({ browserId }) => {
+    try {
+      const text = await withAttachedTab(browserId, (id) => client.snapshot(id));
+      return textResult(text || "(empty page)");
     } catch (err) {
       return errorResult((err as Error).message);
     }
@@ -433,6 +456,19 @@ server.tool(
     try {
       await realClear();
       return textResult("Cleared focused field (real keyboard).");
+    } catch (err) {
+      return errorResult((err as Error).message);
+    }
+  },
+);
+
+server.tool(
+  "launch_floorp",
+  "Ensure Floorp is running: if its automation API isn't reachable, launch the Floorp app and wait for it to come up. No-op if already running. Windows only (set FLOORP_PATH to override the exe location).",
+  {},
+  async () => {
+    try {
+      return textResult(await launchFloorp(client));
     } catch (err) {
       return errorResult((err as Error).message);
     }

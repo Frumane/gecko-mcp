@@ -250,17 +250,49 @@ export class FloorpClient {
     }
   }
 
+  /** Scroll an element (by selector or fingerprint) into view. */
+  async scrollTo(instanceId: string, selector?: string, fingerprint?: string): Promise<void> {
+    await this.request("POST", `/tabs/instances/${instanceId}/scrollTo`, { selector, fingerprint });
+  }
+
   async click(
     instanceId: string,
-    selector: string,
-    opts: { button?: "left" | "right" | "middle"; clickCount?: number; force?: boolean } = {},
+    selector?: string,
+    opts: {
+      button?: "left" | "right" | "middle";
+      clickCount?: number;
+      force?: boolean;
+      fingerprint?: string;
+    } = {},
   ): Promise<void> {
+    // Auto scroll-into-view first so off-screen elements are actionable.
+    await this.scrollTo(instanceId, selector, opts.fingerprint).catch(() => {});
     await this.action(
       instanceId,
       "/click",
-      { selector, button: opts.button, clickCount: opts.clickCount, force: opts.force },
-      `Click "${selector}"`,
+      {
+        selector,
+        fingerprint: opts.fingerprint,
+        button: opts.button,
+        clickCount: opts.clickCount,
+        force: opts.force,
+      },
+      `Click "${selector ?? opts.fingerprint ?? "?"}"`,
     );
+  }
+
+  /**
+   * Structured page snapshot: clean Markdown text with inline fingerprint refs
+   * (`<!--fp:...-->`) plus an "Element Selector Map" (fp | tag | text). Lets an
+   * agent locate elements without grepping raw HTML, then act via a `ref`.
+   */
+  async snapshot(instanceId: string, mode: TextMode = "full"): Promise<string> {
+    const r = await this.request<{ text?: string }>(
+      "POST",
+      `/tabs/instances/${instanceId}/text`,
+      { mode, enableFingerprints: true, includeSelectorMap: true },
+    );
+    return r.text ?? "";
   }
 
   /** Set the value of an input/textarea. */

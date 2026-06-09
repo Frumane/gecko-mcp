@@ -70,13 +70,15 @@ claude mcp add floorp -s user -- node /absolute/path/to/floorp-mcp/dist/index.js
 | `navigate_tab` | Navigate an existing tab to a URL. |
 | `close_tab` | Close a tab. |
 | `read_page` | Read a tab's content as clean Markdown (or HTML / accessibility tree). |
+| `snapshot` | Structured page map: Markdown with inline `fp:` refs + an element selector map — locate elements without grepping HTML, then act via a `ref`. |
 | `screenshot` | Capture a screenshot of a tab (viewport or full page). |
+| `launch_floorp` | Ensure Floorp is running — launches it if the API isn't reachable (Windows). |
 
 **Interaction**
 
 | Tool | What it does |
 |------|--------------|
-| `click` | Click an element by CSS selector. |
+| `click` | Click an element by CSS selector **or a `ref` from `snapshot`**; auto-scrolls it into view first. |
 | `type_text` | Type into an input/textarea — or a rich/contenteditable editor (Slate, ProseMirror…) — by CSS selector. |
 | `fill_form` | Fill multiple fields at once. |
 | `press_key` | Press a keyboard key (Enter, Tab, …). |
@@ -138,6 +140,8 @@ Learned from driving real apps (incl. Google Flow):
 - [x] Interaction tools: click, type, fill forms, key presses, read field values
 - [x] Real OS keyboard (Windows): `real_type` / `real_key` / `real_clear`, with a
       foreground safety guard — drives React/Slate editors & bot-guarded submits
+- [x] `snapshot` (fingerprint refs + selector map) + `click` by `ref` + auto-scroll-into-view
+- [x] `launch_floorp` — start Floorp if not running (Windows)
 - [ ] Real OS mouse (coordinate-calibrated click) — cross-DPI screen mapping
 - [ ] macOS / Linux native-input backends
 - [ ] JS `evaluate` (available in newer Floorp builds; older ones return HTTP 404)
