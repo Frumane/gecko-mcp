@@ -19,7 +19,7 @@ const client = new FloorpClient();
 
 const server = new McpServer({
   name: "floorp-mcp",
-  version: "1.0.0",
+  version: "1.1.0",
 });
 
 // -- helpers ------------------------------------------------------------------
@@ -36,33 +36,50 @@ function errorResult(message: string) {
 }
 
 /** Resolve a browserId (default: active tab) and run `fn` against an attached
- *  instance, always detaching afterwards so the user's tab stays open. */
+ *  instance, always detaching afterwards so the user's tab stays open.
+ *
+ *  Fast path: when a `browserId` is given and the caller doesn't need tab
+ *  metadata (`opts.needTab`), we attach directly and skip the `listTabs`
+ *  round-trip — most action tools (click/type/find/…) only use the instanceId.
+ *  Tools that read `tab.url`/`tab.title` (screenshot, read_page) pass
+ *  `needTab: true` to force the full lookup. */
 async function withAttachedTab<T>(
   browserId: string | undefined,
   fn: (instanceId: string, tab: TabInfo) => Promise<T>,
+  opts: { needTab?: boolean } = {},
 ): Promise<T> {
-  const tabs = await client.listTabs();
-  const tab = browserId
-    ? tabs.find((t) => t.browserId === String(browserId))
-    : tabs.find((t) => t.selected);
+  let tab: TabInfo;
 
-  if (!tab) {
-    throw new Error(
-      browserId
-        ? `No tab with browserId=${browserId}. Run list_tabs to see current tabs.`
-        : "No active tab found.",
-    );
-  }
-  if (!tab.browserId || tab.browserId === "0") {
-    throw new Error(
-      `Tab "${tab.title}" is not loaded yet (Floorp lazy-loads tabs). ` +
-        `Click it in the browser to load it, then try again.`,
-    );
+  if (browserId && !opts.needTab) {
+    // Fast path — no listTabs; attach straight to the requested tab.
+    tab = { browserId: String(browserId), windowId: "", title: "", url: "", selected: false, pinned: false };
+  } else {
+    const tabs = await client.listTabs();
+    const found = browserId
+      ? tabs.find((t) => t.browserId === String(browserId))
+      : tabs.find((t) => t.selected);
+    if (!found) {
+      throw new Error(
+        browserId
+          ? `No tab with browserId=${browserId}. Run list_tabs to see current tabs.`
+          : "No active tab found.",
+      );
+    }
+    if (!found.browserId || found.browserId === "0") {
+      throw new Error(
+        `Tab "${found.title}" is not loaded yet (Floorp lazy-loads tabs). ` +
+          `Click it in the browser to load it, then try again.`,
+      );
+    }
+    tab = found;
   }
 
   const instanceId = await client.attach(tab.browserId);
   if (!instanceId) {
-    throw new Error(`Could not attach to tab "${tab.title}" (browserId=${tab.browserId}).`);
+    throw new Error(
+      `Could not attach to tab (browserId=${tab.browserId}). ` +
+        `It may not be loaded yet — run list_tabs to check.`,
+    );
   }
   try {
     return await fn(instanceId, tab);
@@ -82,6 +99,79 @@ function formatTabList(tabs: TabInfo[]): string {
       return `${i + 1}. ${t.title || "(untitled)"}${suffix}\n   ${t.url}\n   browserId: ${t.browserId}`;
     })
     .join("\n");
+}
+
+// -- find: fast element locator (server-side HTML search) ---------------------
+// Build a clickable CSS selector from an element's opening tag, preferring the
+// most stable identifier available.
+function suggestSelector(openTag: string, tag: string): string {
+  const id = openTag.match(/\sid="([^"]+)"/)?.[1];
+  if (id && /^[A-Za-z_][\w-]*$/.test(id)) return `#${id}`;
+  const name = openTag.match(/\sname="([^"]+)"/)?.[1];
+  if (name) return `${tag}[name="${name}"]`;
+  const href = openTag.match(/\shref="([^"]+)"/)?.[1];
+  if (href && href !== "#" && !href.startsWith("javascript:")) return `${tag}[href="${href}"]`;
+  const cls = openTag
+    .match(/\sclass="([^"]+)"/)?.[1]
+    ?.split(/\s+/)
+    .find((c) => /^[A-Za-z_][\w-]{1,}$/.test(c));
+  if (cls) return `${tag}.${cls}`;
+  const type = openTag.match(/\stype="([^"]+)"/)?.[1];
+  if (type) return `${tag}[type="${type}"]`;
+  return tag;
+}
+
+interface FoundEl {
+  tag: string;
+  selector: string;
+  text: string;
+}
+
+/** Locate elements in raw HTML by visible text and/or tag — runs server-side so
+ *  the full page never reaches the model. Returns compact, clickable matches. */
+function findInHtml(html: string, opts: { text?: string; tag?: string; limit: number }): FoundEl[] {
+  // Strip Floorp's injected automation overlay so it can't pollute matches.
+  html = html
+    .replace(/<style id="nr-webscraper[\s\S]*?<\/style>/gi, " ")
+    .replace(/<div[^>]*nr-webscraper[\s\S]*?<\/div>/gi, " ");
+  const out: FoundEl[] = [];
+  const tagFilter = opts.tag?.toLowerCase();
+  const strip = (s: string) => s.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+  // Text nodes never live in these — skip them so a text search returns visible elements.
+  const INVISIBLE = new Set(["title", "meta", "script", "style", "head", "link", "noscript", "html"]);
+
+  if (opts.text) {
+    const lc = html.toLowerCase();
+    const q = opts.text.toLowerCase();
+    const seen = new Set<number>();
+    let from = 0;
+    while (out.length < opts.limit) {
+      const idx = lc.indexOf(q, from);
+      if (idx < 0) break;
+      from = idx + q.length;
+      const open = html.lastIndexOf("<", idx);
+      if (open < 0 || seen.has(open)) continue;
+      seen.add(open);
+      const tm = html.slice(open).match(/^<([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/);
+      if (!tm) continue;
+      const tg = tm[1].toLowerCase();
+      if (INVISIBLE.has(tg)) continue;
+      if (tagFilter && tg !== tagFilter) continue;
+      // Preview = the matched text node only; cut at the next tag so it can't bleed.
+      const seg = html.slice(idx, idx + 120);
+      const cut = seg.indexOf("<");
+      const text = (cut >= 0 ? seg.slice(0, cut) : seg).replace(/\s+/g, " ").trim();
+      out.push({ tag: tg, selector: suggestSelector(tm[0], tg), text });
+    }
+  } else if (tagFilter) {
+    const re = new RegExp(`<${tagFilter}\\b[^>]*>`, "gi");
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(html)) && out.length < opts.limit) {
+      const after = html.slice(m.index + m[0].length, m.index + m[0].length + 90);
+      out.push({ tag: tagFilter, selector: suggestSelector(m[0], tagFilter), text: strip(after) });
+    }
+  }
+  return out;
 }
 
 // -- tools --------------------------------------------------------------------
@@ -195,7 +285,7 @@ server.tool(
 
 server.tool(
   "read_page",
-  "Read a tab's content. Returns clean Markdown by default; can also return raw HTML or the accessibility tree. Targets the active tab unless a browserId is given.",
+  "Read a tab's content. Returns clean Markdown by default; can also return raw HTML or the accessibility tree. Output is capped (default 25 KB) to protect the context — to LOCATE a specific element use `find` (cheaper) instead. Targets the active tab unless a browserId is given.",
   {
     browserId: z
       .string()
@@ -205,8 +295,12 @@ server.tool(
       .enum(["markdown", "html", "accessibility"])
       .optional()
       .describe("Output format. Default: markdown."),
+    maxChars: z
+      .number()
+      .optional()
+      .describe("Truncate output to this many characters. Default 25000. Pass 0 for no cap."),
   },
-  async ({ browserId, format }) => {
+  async ({ browserId, format, maxChars }) => {
     try {
       const content = await withAttachedTab(browserId, async (instanceId, tab) => {
         const header = `# ${tab.title || "(untitled)"}\n${tab.url}\n\n`;
@@ -215,7 +309,15 @@ server.tool(
           return header + JSON.stringify(await client.getAccessibilityTree(instanceId), null, 2);
         }
         return header + (await client.getText(instanceId));
-      });
+      }, { needTab: true });
+      const cap = maxChars ?? 25000;
+      if (cap > 0 && content.length > cap) {
+        return textResult(
+          content.slice(0, cap) +
+            `\n\n…[truncated ${content.length - cap} of ${content.length} chars. ` +
+            `Use 'find' to locate an element, 'snapshot' for a ref map, or raise maxChars.]`,
+        );
+      }
       return textResult(content);
     } catch (err) {
       return errorResult((err as Error).message);
@@ -248,11 +350,44 @@ server.tool(
         return fullPage
           ? client.fullPageScreenshot(instanceId)
           : client.screenshot(instanceId);
-      });
+      }, { needTab: true });
       if (!image) return errorResult("Floorp returned no image.");
       return {
         content: [{ type: "image" as const, data: image, mimeType: "image/png" }],
       };
+    } catch (err) {
+      return errorResult((err as Error).message);
+    }
+  },
+);
+
+server.tool(
+  "find",
+  "Locate elements on a tab by visible text and/or tag and get a ready-to-use CSS `selector` for each — one fast call that searches the page server-side and returns ~1 KB instead of the whole HTML. Use this INSTEAD of read_page to find a button, link, or field, then pass the returned selector straight to click/type/etc. Provide `text`, `tag`, or both. Active tab unless browserId given.",
+  {
+    text: z
+      .string()
+      .optional()
+      .describe("Visible text to match (substring, case-insensitive)."),
+    tag: z
+      .string()
+      .optional()
+      .describe('Restrict to a tag, e.g. "button", "a", "input", "select".'),
+    limit: z.number().optional().describe("Max matches to return. Default 25."),
+    browserId: z.string().optional().describe("Target tab (from list_tabs). Defaults to active."),
+  },
+  async ({ text, tag, limit, browserId }) => {
+    try {
+      if (!text && !tag) return errorResult("Provide `text` and/or `tag` to search for.");
+      const html = await withAttachedTab(browserId, (id) => client.getHtml(id));
+      const found = findInHtml(html, { text, tag, limit: limit ?? 25 });
+      if (!found.length) return textResult("No matching elements found.");
+      return textResult(
+        `${found.length} match(es) — selector | tag | text:\n` +
+          found
+            .map((f) => `${f.selector}  |  ${f.tag}  |  ${JSON.stringify(f.text.slice(0, 60))}`)
+            .join("\n"),
+      );
     } catch (err) {
       return errorResult((err as Error).message);
     }

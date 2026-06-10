@@ -69,7 +69,8 @@ claude mcp add floorp -s user -- node /absolute/path/to/floorp-mcp/dist/index.js
 | `get_active_tab` | Return the active tab's title, URL and browserId. |
 | `navigate_tab` | Navigate an existing tab to a URL. |
 | `close_tab` | Close a tab. |
-| `read_page` | Read a tab's content as clean Markdown (or HTML / accessibility tree). |
+| `read_page` | Read a tab's content as clean Markdown (or HTML / accessibility tree). Output is capped (default 25 KB) to protect the context. |
+| `find` | **Fast element locator** — search a page server-side by visible text and/or tag; returns a compact list of ready-to-use CSS `selector`s (~1 KB) instead of the whole HTML. Use it to find a button/link/field, then act on the selector. |
 | `snapshot` | Structured page map: Markdown with inline `fp:` refs + an element selector map — locate elements without grepping HTML, then act via a `ref`. |
 | `screenshot` | Capture a screenshot of a tab (viewport or full page). |
 | `launch_floorp` | Ensure Floorp is running — launches it if the API isn't reachable (Windows). |
