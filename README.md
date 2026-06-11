@@ -84,7 +84,7 @@ claude mcp add floorp -s user -- node /absolute/path/to/floorp-mcp/dist/index.js
 | `fill_form` | Fill multiple fields at once. |
 | `press_key` | Press a keyboard key (Enter, Tab, …). |
 | `wait_for_element` | Wait for an element to attach / become visible / etc. |
-| `get_value` | Read the current value of an input/textarea/select. |
+| `get_value` | **Sensitive.** Read the current value of an input/textarea/select (can read password fields). |
 
 Most tools target the **active tab** by default; pass a `browserId` (from
 `list_tabs`) to target a specific tab.
@@ -161,20 +161,44 @@ Hardening built into this server:
   window rectangle — otherwise it aborts *without* sending anything. PowerShell
   payloads are passed base64-encoded via process-private environment variables
   (no shell interpolation, no temp script files on disk).
-- **URL scheme allowlist:** `open_tab`/`navigate_tab` accept only `http(s)`
-  (and `about:blank`) by default, blocking `file://` and browser-internal pages.
-  Override consciously with `FLOORP_MCP_ALLOW_PRIVILEGED_URLS=1`.
+- **URL scheme + host allowlist:** `open_tab`/`navigate_tab` accept only `http(s)`
+  (and `about:blank`) by default, and **refuse loopback/private hosts**
+  (`127.0.0.1`, `localhost`, `10/8`, `172.16/12`, `192.168/16`, `169.254/16`,
+  IPv6 ULA/link-local). This stops a prompt-injected agent from pivoting the
+  browser onto Floorp's own API or your LAN and reading the response back. Lift
+  with `FLOORP_MCP_ALLOW_PRIVILEGED_URLS=1`. Optionally pin navigation to a
+  domain allowlist with `FLOORP_MCP_ALLOW_DOMAINS`.
 - **Cookie values are redacted by default** in `get_cookies`; raw values require
   an explicit `includeValues: true`.
+- **`get_value` can read secrets:** browsers let same-origin JS read password
+  fields, so this tool *can* return a typed password. It's flagged SENSITIVE —
+  use it only on fields the user asked about, never to harvest credentials.
 - **Upload allowlist:** set `FLOORP_MCP_ALLOW_UPLOAD_DIRS` (`;`-separated
-  directories) to confine `upload_file` to specific folders.
+  directories) to confine `upload_file`. Paths are canonicalised with realpath
+  (symlinks resolved) and checked so `..`, a symlink, a same-prefix sibling
+  directory, or a UNC path can't escape the allowed folders.
+- **`find` skips hidden elements** (inline `display:none`/`visibility:hidden`,
+  `hidden`, `type=hidden`, `aria-hidden`) so a page can't lure the agent into
+  clicking an invisible button via text search.
+- **Input bounds:** numeric/text tool parameters are range- and length-capped
+  (coordinates, timeouts, `maxChars`, `find` limit, typed text, form fields) to
+  prevent resource-exhaustion / crash inputs.
+- **Truncated API errors & validated port:** Floorp error bodies are truncated
+  before reaching the model; `FLOORP_MCP_PORT` is validated as 1–65535.
 - **No `evaluate` tool:** arbitrary page-JS execution is deliberately not exposed.
+
+What is **not** defended (inherent / Floorp-side): a malicious *local* process can
+still read or impersonate the unauthenticated loopback API (plaintext, no TLS), and
+prompt injection from a page you choose to automate can still drive legitimate
+actions on that page. Disable `floorp.mcp.enabled` when idle and don't automate
+untrusted sites unattended.
 
 | Environment variable | Effect |
 |---|---|
 | `FLOORP_MCP_TOKEN` | Sent as `Authorization: Bearer …` to the Floorp API. |
-| `FLOORP_MCP_PORT` | API port (default `58261`). |
-| `FLOORP_MCP_ALLOW_PRIVILEGED_URLS` | `1` allows non-http(s) URLs in open/navigate. |
+| `FLOORP_MCP_PORT` | API port (default `58261`, validated 1–65535). |
+| `FLOORP_MCP_ALLOW_PRIVILEGED_URLS` | `1` allows non-http(s) URLs **and** loopback/private hosts in open/navigate. |
+| `FLOORP_MCP_ALLOW_DOMAINS` | Comma-separated domain allowlist for navigation (subdomains included). Unset = any public host. |
 | `FLOORP_MCP_ALLOW_UPLOAD_DIRS` | Restrict `upload_file` to these directories (`;`-separated). |
 | `FLOORP_PATH` | Full path to `floorp.exe` for `launch_floorp`. |
 

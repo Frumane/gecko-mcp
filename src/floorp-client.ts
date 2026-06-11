@@ -49,6 +49,11 @@ export class FloorpClient {
     port: number = Number(process.env.FLOORP_MCP_PORT) || 58261,
     token: string = process.env.FLOORP_MCP_TOKEN ?? "",
   ) {
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      throw new Error(
+        `Invalid Floorp API port "${port}" — must be an integer 1–65535 (check FLOORP_MCP_PORT).`,
+      );
+    }
     this.baseUrl = `http://127.0.0.1:${port}`;
     this.token = token;
   }
@@ -79,7 +84,9 @@ export class FloorpClient {
     }
 
     if (!res.ok) {
-      const text = await res.text().catch(() => "");
+      const raw = await res.text().catch(() => "");
+      // Truncate so a large/unexpected error body can't dump page data into the model.
+      const text = raw.length > 500 ? raw.slice(0, 500) + "…[truncated]" : raw;
       throw new Error(`Floorp API ${res.status} on ${path}: ${text}`);
     }
     return (await res.json()) as T;
