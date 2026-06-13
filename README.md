@@ -1,5 +1,8 @@
 # floorp-mcp
 
+[![CI](https://github.com/Frumane/floorp-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Frumane/floorp-mcp/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 > An **MCP (Model Context Protocol)** server that lets AI assistants — Claude Code,
 > Claude Desktop, Cursor, and any MCP client — **read pages, take screenshots and
 > manage tabs** in the [Floorp](https://floorp.app) browser, using your real,
