@@ -287,4 +287,4 @@ clean-room MIT-licensed implementation.
 
 ## License
 
-[MIT](./LICENSE) © Arda Karaman
+[MIT](./LICENSE) © Frumane
