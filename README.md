@@ -202,6 +202,20 @@ untrusted sites unattended.
 | `FLOORP_MCP_ALLOW_UPLOAD_DIRS` | Restrict `upload_file` to these directories (`;`-separated). |
 | `FLOORP_PATH` | Full path to `floorp.exe` for `launch_floorp`. |
 
+## Performance
+
+- **HTTP tool calls are cheap** — a full attach → act → detach round-trip against
+  Floorp's local API is ~5–6 ms. `find` searches the page server-side and returns
+  ~1 KB of ready-to-use selectors instead of dumping the whole HTML, and
+  `read_page` is capped (default 25 KB) so a page read can't flood the context.
+- **Real OS input uses a persistent PowerShell host.** Spawning `powershell.exe`
+  (~700 ms) and compiling the P/Invoke helper (~600 ms) used to happen on *every*
+  `real_*`/`move_cursor`/`window_bounds` call (~1.9 s each). Now one host is
+  started lazily, compiles once, and runs a read-eval loop — so the first call
+  pays ~1.6 s but every call after is **~350 ms** for a guarded key/click (~5×
+  faster) and a few ms for a window-bounds query. The foreground/bounds safety
+  guards still run on every command; the host is recycled if it hangs or dies.
+
 ## Notes & limitations
 
 Learned from driving real apps (incl. Google Flow):

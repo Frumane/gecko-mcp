@@ -21,7 +21,7 @@ const client = new FloorpClient();
 
 const server = new McpServer({
   name: "floorp-mcp",
-  version: "1.3.0",
+  version: "1.4.0",
 });
 
 // -- helpers ------------------------------------------------------------------
