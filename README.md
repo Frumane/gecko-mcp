@@ -203,6 +203,11 @@ Hardening built into this server:
   prevent resource-exhaustion / crash inputs.
 - **Truncated API errors & validated port:** Floorp error bodies are truncated
   before reaching the model; `FLOORP_MCP_PORT` is validated as 1–65535.
+- **Tool annotations for human-in-the-loop:** every tool carries MCP hints
+  (`readOnlyHint`/`destructiveHint`/…) so your client can auto-run read-only
+  tools and confirm destructive ones (`close_tab`, `navigate_tab`, `submit_form`,
+  `upload_file`). A server can't show prompts itself — approval is the client's
+  job — so this is how floorp-mcp tells the client what's safe vs consequential.
 - **No `evaluate` tool:** arbitrary page-JS execution is deliberately not exposed.
 
 What is **not** defended (inherent / Floorp-side): a malicious *local* process can

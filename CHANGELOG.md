@@ -4,6 +4,17 @@ All notable changes to **floorp-mcp** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [1.7.0]
+
+### Added
+- **MCP tool annotations** on all 35 tools (`readOnlyHint`, `destructiveHint`,
+  `idempotentHint`, `openWorldHint`, `title`). Clients can now gate execution
+  sensibly — auto-run read-only tools (`list_tabs`, `read_page`, `find`,
+  `screenshot`, …) and ask for confirmation on destructive ones (`close_tab`,
+  `navigate_tab`, `submit_form`, `upload_file`). This is the MCP-native way to
+  support human-in-the-loop; the client's permission UI uses the hints.
+- Annotations live in `src/annotations.ts` and are covered by unit tests.
+
 ## [1.6.0]
 
 ### Added
@@ -124,6 +135,7 @@ All notable changes to **floorp-mcp** are documented here. The format follows
   interaction (`click`, `type_text`, `fill_form`, `press_key`,
   `wait_for_element`, `get_value`). (12 tools.)
 
+[1.7.0]: https://github.com/Frumane/floorp-mcp/releases/tag/v1.7.0
 [1.6.0]: https://github.com/Frumane/floorp-mcp/releases/tag/v1.6.0
 [1.5.0]: https://github.com/Frumane/floorp-mcp/releases/tag/v1.5.0
 [1.4.0]: https://github.com/Frumane/floorp-mcp/releases/tag/v1.4.0
