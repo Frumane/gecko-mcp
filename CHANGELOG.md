@@ -4,6 +4,19 @@ All notable changes to **floorp-mcp** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [1.6.0]
+
+### Added
+- **Interactive setup wizard** — `npx floorp-mcp setup`. ASCII banner, then pick
+  which AI coding tool(s) to register floorp-mcp with (Claude Code, Cursor,
+  Windsurf, VS Code/Copilot, Gemini CLI, Codex, Zed, Cline — plus copy-paste
+  snippets for Kimi Code, Antigravity, or any MCP client) and whether to install
+  **per-project** or **globally**. Merges into existing config (preserving other
+  servers) and backs the file up first. Scriptable flags: `--list`, `--tool`,
+  `--scope`, `--print` (dry run), `--cwd`, `--yes`.
+- The `floorp-mcp` binary now routes `setup`/`install`/`init` to the wizard; with
+  no subcommand it still runs the MCP server on stdio (unchanged for clients).
+
 ## [1.5.0]
 
 ### Added
@@ -111,6 +124,7 @@ All notable changes to **floorp-mcp** are documented here. The format follows
   interaction (`click`, `type_text`, `fill_form`, `press_key`,
   `wait_for_element`, `get_value`). (12 tools.)
 
+[1.6.0]: https://github.com/Frumane/floorp-mcp/releases/tag/v1.6.0
 [1.5.0]: https://github.com/Frumane/floorp-mcp/releases/tag/v1.5.0
 [1.4.0]: https://github.com/Frumane/floorp-mcp/releases/tag/v1.4.0
 [1.3.0]: https://github.com/Frumane/floorp-mcp/releases/tag/v1.3.0

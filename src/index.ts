@@ -21,7 +21,7 @@ const client = new FloorpClient();
 
 const server = new McpServer({
   name: "floorp-mcp",
-  version: "1.5.0",
+  version: "1.6.0",
 });
 
 // -- helpers ------------------------------------------------------------------
@@ -868,7 +868,17 @@ server.tool(
 
 // -- startup ------------------------------------------------------------------
 
+// `floorp-mcp setup` (also install/init/config/add) opens the interactive setup
+// wizard; with no subcommand it runs the MCP server on stdio (what MCP clients use).
+const SETUP_CMDS = new Set(["setup", "install", "init", "config", "add"]);
+
 async function main() {
+  const sub = process.argv[2];
+  if (sub && SETUP_CMDS.has(sub)) {
+    const { runSetup } = await import("./setup.js");
+    await runSetup(process.argv.slice(3));
+    return;
+  }
   const transport = new StdioServerTransport();
   await server.connect(transport);
   // stderr is safe; stdout is reserved for the MCP protocol.

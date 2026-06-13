@@ -1,6 +1,6 @@
 {
   "name": "floorp-mcp",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "An MCP server that lets AI assistants (Claude Code, Claude Desktop, Cursor…) read, screenshot and manage tabs in the Floorp browser via its built-in automation API.",
   "type": "module",
   "bin": {

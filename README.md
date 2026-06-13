@@ -35,31 +35,46 @@ required**.
 
 ## Setup
 
-```bash
-git clone https://github.com/Frumane/floorp-mcp
-cd floorp-mcp
-npm install
-npm run build
-```
-
-Register it with Claude Code (user-wide):
+### Quick start — the setup wizard
 
 ```bash
-claude mcp add floorp -s user -- node /absolute/path/to/floorp-mcp/dist/index.js
+npx floorp-mcp setup
 ```
 
-…or add it to your MCP config manually:
+An interactive wizard registers floorp-mcp with the AI coding tool(s) of your
+choice — **Claude Code, Cursor, Windsurf, VS Code (Copilot), Gemini CLI, Codex,
+Zed, Cline** (and a copy-paste snippet for **Kimi Code, Antigravity**, or any
+other MCP client) — and lets you install it **for the current project** or
+**globally (all repos)**. It merges into existing config (and backs it up first).
+
+Non-interactive / scriptable:
+
+```bash
+npx floorp-mcp setup --list                          # show supported tools
+npx floorp-mcp setup --tool claude-code,cursor --scope global
+npx floorp-mcp setup --tool codex --scope global --print   # dry run
+```
+
+### Manual
+
+Any MCP client works with this server block (no clone/build needed — `npx`
+fetches it):
 
 ```json
 {
   "mcpServers": {
     "floorp": {
-      "command": "node",
-      "args": ["/absolute/path/to/floorp-mcp/dist/index.js"]
+      "command": "npx",
+      "args": ["-y", "floorp-mcp"]
     }
   }
 }
 ```
+
+Or with Claude Code's CLI: `claude mcp add floorp -s user -- npx -y floorp-mcp`.
+
+> **One-time Floorp step:** set `floorp.mcp.enabled = true` in `about:config` and
+> restart Floorp so its automation API is available.
 
 ## Tools
 
