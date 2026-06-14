@@ -24,6 +24,7 @@
  */
 
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { envCfg } from "./env.js";
 
 // ---------------------------------------------------------------------------
 // Persistent PowerShell host
@@ -34,8 +35,8 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 // Request payloads arrive as base64 (safe charset, no spaces) so they can never
 // break the protocol or be interpreted as PowerShell.
 // Which browser windows OS-input may target (process-name regex). Defaults to the
-// common Gecko forks; override with FLOORP_MCP_BROWSER_PROCESS. Sanitised to safe chars.
-const BROWSER_RE = (process.env.FLOORP_MCP_BROWSER_PROCESS || "floorp|firefox|librewolf|waterfox|zen|mullvad|navigator").replace(/[^a-zA-Z0-9|_-]/g, "");
+// common Gecko forks; override with GECKO_MCP_BROWSER_PROCESS. Sanitised to safe chars.
+const BROWSER_RE = (envCfg("BROWSER_PROCESS") || "floorp|firefox|librewolf|waterfox|zen|mullvad|navigator").replace(/[^a-zA-Z0-9|_-]/g, "");
 const HOST_SCRIPT = `
 $ErrorActionPreference = 'Stop'
 Add-Type @"

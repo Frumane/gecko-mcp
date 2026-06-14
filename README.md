@@ -1,6 +1,6 @@
-# floorp-mcp
+# gecko-mcp
 
-[![CI](https://github.com/Frumane/floorp-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Frumane/floorp-mcp/actions/workflows/ci.yml)
+[![CI](https://github.com/Frumane/gecko-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/Frumane/gecko-mcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > An **MCP (Model Context Protocol)** server that lets AI assistants — Claude Code,
@@ -12,20 +12,20 @@ Think "Claude in Chrome", but for the whole Firefox/Gecko family.
 
 ## How it works
 
-floorp-mcp talks to the browser through one of two backends, picked automatically:
+gecko-mcp talks to the browser through one of two backends, picked automatically:
 
 - **Floorp** ships a built-in automation HTTP API. Set `floorp.mcp.enabled = true`
-  in `about:config` and floorp-mcp uses the fast `http://127.0.0.1:58261` API —
+  in `about:config` and gecko-mcp uses the fast `http://127.0.0.1:58261` API —
   no extension, richest feature set.
 - **Any other Gecko browser** — launch it with **Marionette** (the automation
-  engine built into every Firefox fork) and floorp-mcp drives your live session
+  engine built into every Firefox fork) and gecko-mcp drives your live session
   over it. Same tools, same real session.
 
 ```
   Claude Code / Desktop / Cursor
             │  MCP (stdio)
             ▼
-      floorp-mcp ──► Floorp :58261 (built-in API)        ─┐
+      gecko-mcp ──► Floorp :58261 (built-in API)        ─┐
    (this project) ──► Marionette :2828 (any Gecko fork)  ─┴─► your real tabs
 ```
 
@@ -42,10 +42,10 @@ floorp-mcp talks to the browser through one of two backends, picked automaticall
 ### Quick start — the setup wizard
 
 ```bash
-npx floorp-mcp setup
+npx gecko-mcp setup
 ```
 
-An interactive wizard registers floorp-mcp with the AI coding tool(s) of your
+An interactive wizard registers gecko-mcp with the AI coding tool(s) of your
 choice — **Claude Code, Cursor, Windsurf, VS Code (Copilot), Gemini CLI, Codex,
 Zed, Cline** (and a copy-paste snippet for **Kimi Code, Antigravity**, or any
 other MCP client) — and lets you install it **for the current project** or
@@ -54,9 +54,9 @@ other MCP client) — and lets you install it **for the current project** or
 Non-interactive / scriptable:
 
 ```bash
-npx floorp-mcp setup --list                          # show supported tools
-npx floorp-mcp setup --tool claude-code,cursor --scope global
-npx floorp-mcp setup --tool codex --scope global --print   # dry run
+npx gecko-mcp setup --list                          # show supported tools
+npx gecko-mcp setup --tool claude-code,cursor --scope global
+npx gecko-mcp setup --tool codex --scope global --print   # dry run
 ```
 
 ### Manual
@@ -67,22 +67,22 @@ fetches it):
 ```json
 {
   "mcpServers": {
-    "floorp": {
+    "gecko": {
       "command": "npx",
-      "args": ["-y", "floorp-mcp"]
+      "args": ["-y", "gecko-mcp"]
     }
   }
 }
 ```
 
-Or with Claude Code's CLI: `claude mcp add floorp -s user -- npx -y floorp-mcp`.
+Or with Claude Code's CLI: `claude mcp add gecko -s user -- npx -y gecko-mcp`.
 
 > **One-time Floorp step:** set `floorp.mcp.enabled = true` in `about:config` and
 > restart Floorp so its automation API is available.
 
 ## Browser support
 
-floorp-mcp picks its backend automatically: if Floorp's `:58261` API is reachable
+gecko-mcp picks its backend automatically: if Floorp's `:58261` API is reachable
 it uses that; otherwise it connects to **Marionette**, the automation engine built
 into every Gecko browser. To use a non-Floorp browser, launch it once with
 Marionette enabled:
@@ -97,8 +97,8 @@ Marionette enabled:
 | **Mullvad** | `mullvad-browser -marionette` |
 
 Marionette listens on TCP **2828** by default. To use another port, set the
-`marionette.port` pref in the profile (e.g. via `user.js`) and start floorp-mcp
-with a matching `MARIONETTE_PORT`. Force a backend with `FLOORP_MCP_BACKEND=marionette`.
+`marionette.port` pref in the profile (e.g. via `user.js`) and start gecko-mcp
+with a matching `MARIONETTE_PORT`. Force a backend with `GECKO_MCP_BACKEND=marionette`.
 
 > **Note:** Marionette must be enabled *at launch* to attach to your live session.
 > On the Marionette backend, Floorp-only extras (`snapshot` fingerprints,
@@ -176,7 +176,7 @@ Workflow: `click` the field to focus it → `real_clear` / `real_type` / `real_k
 | `select_option` | Choose an option in a `<select>`. |
 | `set_checked` | Check/uncheck a checkbox or radio. |
 | `submit_form` | Submit a form. |
-| `upload_file` | **Sensitive.** Set a file `<input>` by absolute path — restrict with `FLOORP_MCP_ALLOW_UPLOAD_DIRS`. |
+| `upload_file` | **Sensitive.** Set a file `<input>` by absolute path — restrict with `GECKO_MCP_ALLOW_UPLOAD_DIRS`. |
 | `get_attribute` | Read an element attribute (href, value, …). |
 | `get_article` | Readability-extracted main article as Markdown. |
 | `get_cookies` | **Sensitive.** Cookies visible to the page — values redacted unless `includeValues: true`. |
@@ -193,7 +193,7 @@ Understand the threat model before enabling this. Two risks dominate:
    Origin check, so hostile web pages may attempt CSRF/DNS-rebinding tricks
    against it. Mitigations:
    - Turn `floorp.mcp.enabled` **off** when you're not using automation.
-   - Set the `FLOORP_MCP_TOKEN` environment variable — this server then sends it
+   - Set the `GECKO_MCP_TOKEN` environment variable — this server then sends it
      as a `Bearer` token on every request (effective on Floorp builds that
      enforce a token; harmless otherwise).
 2. **Prompt injection ("lethal trifecta").** The assistant reads untrusted page
@@ -214,14 +214,14 @@ Hardening built into this server:
   (`127.0.0.1`, `localhost`, `10/8`, `172.16/12`, `192.168/16`, `169.254/16`,
   IPv6 ULA/link-local). This stops a prompt-injected agent from pivoting the
   browser onto Floorp's own API or your LAN and reading the response back. Lift
-  with `FLOORP_MCP_ALLOW_PRIVILEGED_URLS=1`. Optionally pin navigation to a
-  domain allowlist with `FLOORP_MCP_ALLOW_DOMAINS`.
+  with `GECKO_MCP_ALLOW_PRIVILEGED_URLS=1`. Optionally pin navigation to a
+  domain allowlist with `GECKO_MCP_ALLOW_DOMAINS`.
 - **Cookie values are redacted by default** in `get_cookies`; raw values require
   an explicit `includeValues: true`.
 - **`get_value` can read secrets:** browsers let same-origin JS read password
   fields, so this tool *can* return a typed password. It's flagged SENSITIVE —
   use it only on fields the user asked about, never to harvest credentials.
-- **Upload allowlist:** set `FLOORP_MCP_ALLOW_UPLOAD_DIRS` (`;`-separated
+- **Upload allowlist:** set `GECKO_MCP_ALLOW_UPLOAD_DIRS` (`;`-separated
   directories) to confine `upload_file`. Paths are canonicalised with realpath
   (symlinks resolved) and checked so `..`, a symlink, a same-prefix sibling
   directory, or a UNC path can't escape the allowed folders.
@@ -232,12 +232,12 @@ Hardening built into this server:
   (coordinates, timeouts, `maxChars`, `find` limit, typed text, form fields) to
   prevent resource-exhaustion / crash inputs.
 - **Truncated API errors & validated port:** Floorp error bodies are truncated
-  before reaching the model; `FLOORP_MCP_PORT` is validated as 1–65535.
+  before reaching the model; `GECKO_MCP_PORT` is validated as 1–65535.
 - **Tool annotations for human-in-the-loop:** every tool carries MCP hints
   (`readOnlyHint`/`destructiveHint`/…) so your client can auto-run read-only
   tools and confirm destructive ones (`close_tab`, `navigate_tab`, `submit_form`,
   `upload_file`). A server can't show prompts itself — approval is the client's
-  job — so this is how floorp-mcp tells the client what's safe vs consequential.
+  job — so this is how gecko-mcp tells the client what's safe vs consequential.
 - **No `evaluate` tool:** arbitrary page-JS execution is deliberately not exposed.
 
 What is **not** defended (inherent / Floorp-side): a malicious *local* process can
@@ -248,15 +248,18 @@ untrusted sites unattended.
 
 | Environment variable | Effect |
 |---|---|
-| `FLOORP_MCP_TOKEN` | Sent as `Authorization: Bearer …` to the Floorp API. |
-| `FLOORP_MCP_PORT` | API port (default `58261`, validated 1–65535). |
-| `FLOORP_MCP_ALLOW_PRIVILEGED_URLS` | `1` allows non-http(s) URLs **and** loopback/private hosts in open/navigate. |
-| `FLOORP_MCP_ALLOW_DOMAINS` | Comma-separated domain allowlist for navigation (subdomains included). Unset = any public host. |
-| `FLOORP_MCP_ALLOW_UPLOAD_DIRS` | Restrict `upload_file` to these directories (`;`-separated). |
+| `GECKO_MCP_TOKEN` | Sent as `Authorization: Bearer …` to the Floorp API. |
+| `GECKO_MCP_PORT` | API port (default `58261`, validated 1–65535). |
+| `GECKO_MCP_ALLOW_PRIVILEGED_URLS` | `1` allows non-http(s) URLs **and** loopback/private hosts in open/navigate. |
+| `GECKO_MCP_ALLOW_DOMAINS` | Comma-separated domain allowlist for navigation (subdomains included). Unset = any public host. |
+| `GECKO_MCP_ALLOW_UPLOAD_DIRS` | Restrict `upload_file` to these directories (`;`-separated). |
 | `FLOORP_PATH` | Full path to `floorp.exe` for `launch_floorp`. |
-| `FLOORP_MCP_BACKEND` | Force the backend: `floorp` or `marionette`. Default: auto-detect. |
+| `GECKO_MCP_BACKEND` | Force the backend: `floorp` or `marionette`. Default: auto-detect. |
 | `MARIONETTE_PORT` | Marionette TCP port for non-Floorp browsers (default `2828`). |
-| `FLOORP_MCP_BROWSER_PROCESS` | Process-name regex the real OS keyboard/mouse may target (default covers the common Gecko forks). |
+| `GECKO_MCP_BROWSER_PROCESS` | Process-name regex the real OS keyboard/mouse may target (default covers the common Gecko forks). |
+
+> The legacy `FLOORP_MCP_*` variable names still work as fallbacks (from before the
+> rename), so existing configs keep working — prefer `GECKO_MCP_*` going forward.
 
 ## Performance
 

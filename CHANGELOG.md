@@ -4,6 +4,21 @@ All notable changes to **floorp-mcp** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [2.0.0]
+
+### Changed (breaking — project renamed)
+- **Renamed `floorp-mcp` → `gecko-mcp`.** The project now supports the whole
+  Firefox/Gecko family, so the name reflects that. Install with `npx gecko-mcp`
+  (the old `floorp-mcp` npm package is deprecated and points here). The GitHub
+  repo moved to `Frumane/gecko-mcp` (old links redirect).
+- Env vars are now prefixed **`GECKO_MCP_*`** (e.g. `GECKO_MCP_PORT`,
+  `GECKO_MCP_BACKEND`). The legacy `FLOORP_MCP_*` names still work as fallbacks,
+  so existing configs keep running.
+- The setup wizard (`gecko-mcp setup`) and its config snippets now use the
+  `gecko-mcp` package and a `gecko` server key.
+- `floorp.mcp.enabled`, the `:58261` Floorp API, and the `FLOORP_PATH` launch
+  override are unchanged — those refer to the Floorp browser itself.
+
 ## [1.8.0]
 
 ### Added
@@ -155,6 +170,7 @@ All notable changes to **floorp-mcp** are documented here. The format follows
   interaction (`click`, `type_text`, `fill_form`, `press_key`,
   `wait_for_element`, `get_value`). (12 tools.)
 
+[2.0.0]: https://github.com/Frumane/gecko-mcp/releases/tag/v2.0.0
 [1.8.0]: https://github.com/Frumane/floorp-mcp/releases/tag/v1.8.0
 [1.7.0]: https://github.com/Frumane/floorp-mcp/releases/tag/v1.7.0
 [1.6.0]: https://github.com/Frumane/floorp-mcp/releases/tag/v1.6.0

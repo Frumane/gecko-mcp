@@ -1,8 +1,8 @@
 /**
- * Interactive setup wizard: `floorp-mcp setup`.
+ * Interactive setup wizard: `gecko-mcp setup`.
  *
  * Shows an ASCII banner, lets the user pick which AI coding tool(s) to register
- * floorp-mcp with, and whether to install it for the current project or globally
+ * gecko-mcp with, and whether to install it for the current project or globally
  * (all repos). Writes/merges each tool's MCP config — preserving anything already
  * there and backing up the file first. Tools whose config format we can't safely
  * write are shown as a copy-paste snippet instead.
@@ -51,14 +51,15 @@ function banner(version: string): void {
     console.log("  " + (useColor ? `\x1b[${GRADIENT[i]}m${line}\x1b[0m` : line));
   });
   console.log();
-  console.log("  " + bold(cyan("floorp-mcp")) + dim(`  setup wizard · v${version}`));
+  console.log("  " + bold(cyan("gecko-mcp")) + dim(`  setup wizard · v${version}`));
   console.log("  " + dim("drive the Floorp browser from your AI coding tool"));
   console.log();
 }
 
 // -- the server entry every tool gets ----------------------------------------
 const CMD = "npx";
-const ARGS = ["-y", "floorp-mcp"];
+const ARGS = ["-y", "gecko-mcp"];
+const KEY = "gecko"; // the server key written into each tool's MCP config
 
 type Scope = "global" | "project";
 type Kind = "mcpServers" | "vscode" | "zed" | "codex-toml" | "manual";
@@ -196,7 +197,7 @@ function ensureDir(file: string): void {
 
 function backup(file: string): string | null {
   if (!existsSync(file)) return null;
-  const bak = `${file}.floorp-bak`;
+  const bak = `${file}.gecko-bak`;
   copyFileSync(file, bak);
   return bak;
 }
@@ -216,18 +217,18 @@ function writeMerged(plan: Plan, dryRun: boolean): WriteResult {
 
   if (plan.kind === "mcpServers") {
     cfg.mcpServers ??= {};
-    already = JSON.stringify(cfg.mcpServers.floorp) === JSON.stringify({ command: CMD, args: ARGS });
-    cfg.mcpServers.floorp = { command: CMD, args: ARGS };
+    already = JSON.stringify(cfg.mcpServers[KEY]) === JSON.stringify({ command: CMD, args: ARGS });
+    cfg.mcpServers[KEY] = { command: CMD, args: ARGS };
   } else if (plan.kind === "vscode") {
     cfg.servers ??= {};
     const entry = { type: "stdio", command: CMD, args: ARGS };
-    already = JSON.stringify(cfg.servers.floorp) === JSON.stringify(entry);
-    cfg.servers.floorp = entry;
+    already = JSON.stringify(cfg.servers[KEY]) === JSON.stringify(entry);
+    cfg.servers[KEY] = entry;
   } else if (plan.kind === "zed") {
     cfg.context_servers ??= {};
     const entry = { command: { path: CMD, args: ARGS }, settings: {} };
-    already = JSON.stringify(cfg.context_servers.floorp) === JSON.stringify(entry);
-    cfg.context_servers.floorp = entry;
+    already = JSON.stringify(cfg.context_servers[KEY]) === JSON.stringify(entry);
+    cfg.context_servers[KEY] = entry;
   }
 
   const bak = dryRun ? null : backup(file);
@@ -242,9 +243,9 @@ function writeCodexToml(plan: Plan, dryRun: boolean): WriteResult {
   const file = plan.file!;
   const created = !existsSync(file);
   const existing = existsSync(file) ? readFileSync(file, "utf8") : "";
-  const already = /\[mcp_servers\.floorp\]/.test(existing);
+  const already = new RegExp(`\\[mcp_servers\\.${KEY}\\]`).test(existing);
   const head = existing.replace(/\s*$/, "");
-  const block = `[mcp_servers.floorp]\ncommand = "${CMD}"\nargs = [${ARGS.map((a) => `"${a}"`).join(", ")}]\n`;
+  const block = `[mcp_servers.${KEY}]\ncommand = "${CMD}"\nargs = [${ARGS.map((a) => `"${a}"`).join(", ")}]\n`;
   const bak = dryRun ? null : backup(file);
   if (!dryRun && !already) {
     ensureDir(file);
@@ -254,8 +255,8 @@ function writeCodexToml(plan: Plan, dryRun: boolean): WriteResult {
 }
 
 function manualSnippet(): string {
-  const json = JSON.stringify({ mcpServers: { floorp: { command: CMD, args: ARGS } } }, null, 2);
-  const toml = `[mcp_servers.floorp]\ncommand = "${CMD}"\nargs = [${ARGS.map((a) => `"${a}"`).join(", ")}]`;
+  const json = JSON.stringify({ mcpServers: { [KEY]: { command: CMD, args: ARGS } } }, null, 2);
+  const toml = `[mcp_servers.${KEY}]\ncommand = "${CMD}"\nargs = [${ARGS.map((a) => `"${a}"`).join(", ")}]`;
   return dim("  JSON (most tools):\n") + json.split("\n").map((l) => "    " + l).join("\n") +
     dim("\n\n  TOML (Codex-style):\n") + toml.split("\n").map((l) => "    " + l).join("\n");
 }
@@ -355,7 +356,7 @@ export async function runSetup(argv: string[]): Promise<void> {
     const bad = toolIds.filter((id) => !TOOLS.some((t) => t.id === id));
     if (bad.length) throw new Error(`unknown tool(s): ${bad.join(", ")} — see --list`);
   } else {
-    const picks = await select("Which tool(s) should floorp-mcp be added to?", TOOLS, true);
+    const picks = await select("Which tool(s) should gecko-mcp be added to?", TOOLS, true);
     if (!picks.length) { console.log(yellow("\n  Nothing selected — bye.")); return; }
     toolIds = picks.map((i) => TOOLS[i].id);
   }

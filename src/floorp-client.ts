@@ -39,6 +39,8 @@ export interface EvaluateResult {
   errorType?: string;
 }
 
+import { envCfg } from "./env.js";
+
 const DATA_URL_PREFIX = /^data:image\/[a-z]+;base64,/;
 
 /**
@@ -102,12 +104,12 @@ export class FloorpClient implements BrowserBackend {
   private readonly token: string;
 
   constructor(
-    port: number = Number(process.env.FLOORP_MCP_PORT) || 58261,
-    token: string = process.env.FLOORP_MCP_TOKEN ?? "",
+    port: number = Number(envCfg("PORT")) || 58261,
+    token: string = envCfg("TOKEN") ?? "",
   ) {
     if (!Number.isInteger(port) || port < 1 || port > 65535) {
       throw new Error(
-        `Invalid Floorp API port "${port}" — must be an integer 1–65535 (check FLOORP_MCP_PORT).`,
+        `Invalid Floorp API port "${port}" — must be an integer 1–65535 (check GECKO_MCP_PORT).`,
       );
     }
     this.baseUrl = `http://127.0.0.1:${port}`;

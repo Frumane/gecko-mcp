@@ -1,7 +1,7 @@
 /**
  * Minimal Marionette client — the automation protocol built into *every*
  * Gecko/Firefox-based browser (Firefox, LibreWolf, Waterfox, Zen, Mullvad,
- * Floorp…). Lets floorp-mcp drive any of them, not just Floorp, by attaching to
+ * Floorp…). Lets gecko-mcp drive any of them, not just Floorp, by attaching to
  * a browser launched with Marionette enabled (`-marionette`, default TCP 2828).
  *
  * Wire format: each message is `<byteLength>:<utf8-json>`. On connect the server
