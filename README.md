@@ -128,6 +128,7 @@ with a matching `MARIONETTE_PORT`. Force a backend with `GECKO_MCP_BACKEND=mario
 | `snapshot` | Structured page map: Markdown with inline `fp:` refs + an element selector map — locate elements without grepping HTML, then act via a `ref`. |
 | `screenshot` | Capture a screenshot of a tab (viewport or full page). |
 | `launch_floorp` | Ensure Floorp is running — launches it if the API isn't reachable (Windows). |
+| `launch` | Start any Firefox-based browser (Firefox, LibreWolf, Zen…) with Marionette enabled so gecko-mcp can drive it. |
 
 **Interaction**
 
@@ -151,9 +152,14 @@ Unlock them per-session by just asking ("**enable OS input**", which calls the
 `enable_os_input` tool), or persistently with `GECKO_MCP_ENABLE_OS_INPUT=1`. Lock
 again with `disable_os_input`. While locked, these tools refuse with a clear message.
 
+The **`evaluate`** tool (run arbitrary page JavaScript) is locked the same way —
+unlock with `enable_evaluate` or `GECKO_MCP_ENABLE_EVALUATE=1`.
+
 | Tool | What it does |
 |------|--------------|
 | `enable_os_input` / `disable_os_input` | Unlock / re-lock the OS keyboard & mouse tools for this session. |
+| `enable_evaluate` / `disable_evaluate` | Unlock / re-lock the `evaluate` (run page JS) tool for this session. |
+| `evaluate` | **Locked.** Run JavaScript in the page and return its value (`return …`). |
 
 **Real OS keyboard (Windows)** — for React/rich editors and bot-guarded submits
 that ignore synthetic input:
@@ -279,6 +285,7 @@ untrusted sites unattended.
 | `GECKO_MCP_BACKEND` | Force the backend: `floorp` or `marionette`. Default: auto-detect. |
 | `MARIONETTE_PORT` | Marionette TCP port for non-Floorp browsers (default `2828`). |
 | `GECKO_MCP_ENABLE_OS_INPUT` | `1` unlocks the OS keyboard/mouse tools at startup (otherwise locked until the `enable_os_input` tool is called). |
+| `GECKO_MCP_ENABLE_EVALUATE` | `1` unlocks the `evaluate` (run page JS) tool at startup (otherwise locked until `enable_evaluate`). |
 | `GECKO_MCP_BROWSER_PROCESS` | Process-name regex the real OS keyboard/mouse may target (default covers the common Gecko forks). |
 
 > The legacy `FLOORP_MCP_*` variable names still work as fallbacks (from before the

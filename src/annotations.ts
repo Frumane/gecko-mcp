@@ -49,6 +49,10 @@ export const ANNOTATIONS: Record<string, Record<string, unknown>> = {
   move_cursor: mut("Move cursor"),
   real_click: mut("Click (real mouse)"),
   launch_floorp: { ...mut("Launch Floorp"), idempotentHint: true },
+  launch: { ...mut("Launch browser"), idempotentHint: true },
+  evaluate: destroy("Evaluate JavaScript"),
   enable_os_input: { title: "Enable OS input", readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   disable_os_input: { title: "Disable OS input", readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  enable_evaluate: { title: "Enable evaluate", readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+  disable_evaluate: { title: "Disable evaluate", readOnlyHint: false, destructiveHint: false, openWorldHint: false },
 };

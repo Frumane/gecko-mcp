@@ -95,6 +95,7 @@ export interface BrowserBackend {
   getArticle(instanceId: string): Promise<{ title?: string; byline?: string; markdown?: string; length?: number } | null>;
   getCookies(instanceId: string): Promise<unknown[]>;
   waitForNetworkIdle(instanceId: string, timeout?: number): Promise<boolean>;
+  evaluate(instanceId: string, script: string): Promise<EvaluateResult>;
   listWorkspaces(): Promise<Array<{ id: string; name: string }>>;
   switchWorkspace(id: string): Promise<boolean>;
 }

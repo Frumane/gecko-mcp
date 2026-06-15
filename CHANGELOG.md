@@ -4,6 +4,21 @@ All notable changes to **floorp-mcp** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [2.2.0]
+
+### Added
+- **`evaluate`** — run JavaScript in the page and get the result back (via
+  Marionette `ExecuteScript`; some Floorp builds don't expose it). Powerful, so
+  it's **LOCKED by default** like OS input: unlock with the new **`enable_evaluate`**
+  tool (the user just asks) or `GECKO_MCP_ENABLE_EVALUATE=1`; **`disable_evaluate`**
+  re-locks. Result is stringified and capped (default 25 KB).
+- **`launch`** — start any Firefox-based browser (Firefox, LibreWolf, Waterfox,
+  Zen, Mullvad, Floorp) with Marionette enabled, using its normal profile, so
+  gecko-mcp can drive it. Takes `browser` (known name) or `path`; auto-detects an
+  installed one otherwise. (Close the browser first if it's already running without
+  Marionette.)
+- The new tools are covered by the real-Firefox CI integration test.
+
 ## [2.1.1]
 
 ### Changed
@@ -203,6 +218,7 @@ All notable changes to **floorp-mcp** are documented here. The format follows
   interaction (`click`, `type_text`, `fill_form`, `press_key`,
   `wait_for_element`, `get_value`). (12 tools.)
 
+[2.2.0]: https://github.com/Frumane/gecko-mcp/releases/tag/v2.2.0
 [2.1.1]: https://github.com/Frumane/gecko-mcp/releases/tag/v2.1.1
 [2.1.0]: https://github.com/Frumane/gecko-mcp/releases/tag/v2.1.0
 [2.0.1]: https://github.com/Frumane/gecko-mcp/releases/tag/v2.0.1

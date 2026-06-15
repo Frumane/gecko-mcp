@@ -14,7 +14,7 @@ import { z } from "zod";
 import { FloorpClient, type TabInfo, type BrowserBackend } from "./floorp-client.js";
 import { MarionetteBackend } from "./marionette-backend.js";
 import { realType, realKey, realClear, moveCursor, realClick, floorpWindowBounds } from "./os-input.js";
-import { launchFloorp } from "./launch.js";
+import { launchFloorp, launchBrowser } from "./launch.js";
 import { PRIVILEGED_SCHEME, assertNavigableUrl, assertUploadAllowed } from "./guards.js";
 import { findInHtml } from "./html-find.js";
 import { ANNOTATIONS } from "./annotations.js";
@@ -24,7 +24,7 @@ let client: BrowserBackend = new FloorpClient();
 
 const server = new McpServer({
   name: "gecko-mcp",
-  version: "2.1.1",
+  version: "2.2.0",
 });
 
 // -- helpers ------------------------------------------------------------------
@@ -62,6 +62,19 @@ function requireOsInput(): ReturnType<typeof errorResult> | null {
     'Real OS keyboard/mouse is LOCKED for safety. To use it, the user must enable it — ' +
       'they can simply say "enable OS input" (which calls the enable_os_input tool). ' +
       "Persistent alternative: start gecko-mcp with GECKO_MCP_ENABLE_OS_INPUT=1.",
+  );
+}
+
+// Running arbitrary page JavaScript is powerful, so `evaluate` is LOCKED by default
+// too. Unlock per-session with enable_evaluate, or persistently with
+// GECKO_MCP_ENABLE_EVALUATE=1.
+let evaluateUnlocked = envCfg("ENABLE_EVALUATE") === "1";
+function requireEvaluate(): ReturnType<typeof errorResult> | null {
+  if (evaluateUnlocked) return null;
+  return errorResult(
+    'The `evaluate` tool (runs arbitrary JavaScript in the page) is LOCKED for safety. ' +
+      'The user can enable it by saying "enable evaluate" (calls the enable_evaluate tool), ' +
+      "or start gecko-mcp with GECKO_MCP_ENABLE_EVALUATE=1.",
   );
 }
 
@@ -915,12 +928,72 @@ regTool(
 );
 
 regTool(
+  "evaluate",
+  "Run JavaScript in the page and return its value. Your snippet should `return` something, e.g. `return document.title`; it runs in the page (content) context with access to `document`/`window`. LOCKED by default (powerful) — enable with enable_evaluate first. Best on the Marionette backend; some Floorp builds don't expose it. Active tab unless browserId given.",
+  {
+    script: z.string().max(100_000).describe("JavaScript to run; use `return` to produce a value."),
+    browserId: z.string().optional().describe("Target tab. Defaults to active."),
+    maxChars: z.number().int().min(0).max(5_000_000).optional().describe("Truncate the stringified result. Default 25000."),
+  },
+  async ({ script, browserId, maxChars }) => {
+    const lock = requireEvaluate();
+    if (lock) return lock;
+    try {
+      const r = await withAttachedTab(browserId, (id) => client.evaluate(id, script));
+      if (r.success === false) return errorResult(`Script error: ${r.error ?? "unknown"}`);
+      const out = typeof r.result === "string" ? r.result : JSON.stringify(r.result, null, 2);
+      const text = out ?? "undefined";
+      const cap = maxChars ?? 25000;
+      return textResult(cap > 0 && text.length > cap ? text.slice(0, cap) + `\n…[truncated ${text.length - cap} chars]` : text);
+    } catch (err) {
+      return errorResult((err as Error).message);
+    }
+  },
+);
+
+regTool(
+  "enable_evaluate",
+  "Unlock the `evaluate` tool (run arbitrary page JavaScript) for this session. Call ONLY when the user explicitly asks (e.g. they say \"enable evaluate\"). Re-lock with disable_evaluate.",
+  {},
+  async () => {
+    evaluateUnlocked = true;
+    return textResult('`evaluate` ENABLED for this session. Run "disable_evaluate" to lock it again.');
+  },
+);
+
+regTool(
+  "disable_evaluate",
+  "Re-lock the `evaluate` tool for this session (undo enable_evaluate).",
+  {},
+  async () => {
+    evaluateUnlocked = false;
+    return textResult("`evaluate` LOCKED again.");
+  },
+);
+
+regTool(
   "launch_floorp",
   "Ensure Floorp is running: if its automation API isn't reachable, launch the Floorp app and wait for it to come up. No-op if already running. Windows only (set FLOORP_PATH to override the exe location).",
   {},
   async () => {
     try {
       return textResult(await launchFloorp(client));
+    } catch (err) {
+      return errorResult((err as Error).message);
+    }
+  },
+);
+
+regTool(
+  "launch",
+  "Launch a Firefox-based browser with Marionette enabled (so gecko-mcp can drive it), using its normal profile. Use for non-Floorp browsers (Firefox, LibreWolf, Waterfox, Zen, Mullvad). Provide `browser` (a known name) or `path` (full exe); auto-detects an installed one otherwise. If the browser is already running WITHOUT Marionette, close it first.",
+  {
+    browser: z.string().max(40).optional().describe('Known name: "firefox", "librewolf", "waterfox", "zen", "mullvad", "floorp".'),
+    path: z.string().max(1000).optional().describe("Full path to the browser executable (overrides `browser`)."),
+  },
+  async ({ browser, path }) => {
+    try {
+      return textResult(await launchBrowser({ browser, path }));
     } catch (err) {
       return errorResult((err as Error).message);
     }

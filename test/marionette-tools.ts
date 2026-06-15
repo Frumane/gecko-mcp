@@ -70,6 +70,13 @@ try {
   const shot = await call("screenshot", { browserId });
   chk("screenshot returns an image", !!shot.image && (shot.image.data?.length ?? 0) > 1000, shot.text.slice(0, 80));
 
+  // evaluate is locked by default; unlock then run page JS
+  const locked = await call("evaluate", { script: "return document.title", browserId });
+  chk("evaluate locked by default", locked.isError && /LOCKED/i.test(locked.text), locked.text.slice(0, 80));
+  await call("enable_evaluate");
+  const evald = await call("evaluate", { script: "return document.title", browserId });
+  chk("evaluate runs after enable", !evald.isError && /example domain/i.test(evald.text), evald.text.slice(0, 80));
+
   if (selector) {
     const clicked = await call("click", { selector, browserId });
     chk("click works", !clicked.isError, clicked.text.slice(0, 120));

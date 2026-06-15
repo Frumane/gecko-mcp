@@ -423,6 +423,19 @@ export class MarionetteBackend implements BrowserBackend {
     return false;
   }
 
+  async evaluate(
+    instanceId: string,
+    script: string,
+  ): Promise<{ success: boolean; result?: unknown; error?: string }> {
+    const m = await this.switchTo(instanceId);
+    try {
+      const result = await this.exec(m, script);
+      return { success: true, result };
+    } catch (e) {
+      return { success: false, error: (e as Error).message };
+    }
+  }
+
   async listWorkspaces(): Promise<Array<{ id: string; name: string }>> {
     throw new Error("Workspaces are a Floorp-only feature.");
   }
