@@ -9,11 +9,11 @@ const READ_ONLY = [
 ];
 const DESTRUCTIVE = ["close_tab", "navigate_tab", "submit_form", "upload_file"];
 
-test("every annotation has a title and openWorldHint", () => {
+test("every annotation has a title and a boolean openWorldHint", () => {
   for (const [name, a] of Object.entries(ANNOTATIONS)) {
     assert.equal(typeof a.title, "string", `${name} needs a title`);
     assert.ok((a.title as string).length > 0, `${name} title not empty`);
-    assert.equal(a.openWorldHint, true, `${name} openWorldHint`);
+    assert.equal(typeof a.openWorldHint, "boolean", `${name} openWorldHint`);
   }
 });
 

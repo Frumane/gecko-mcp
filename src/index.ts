@@ -24,7 +24,7 @@ let client: BrowserBackend = new FloorpClient();
 
 const server = new McpServer({
   name: "gecko-mcp",
-  version: "2.0.1",
+  version: "2.1.0",
 });
 
 // -- helpers ------------------------------------------------------------------
@@ -49,6 +49,20 @@ function regTool<S extends z.ZodRawShape>(
   const annotations = ANNOTATIONS[name];
   if (annotations) server.tool(name, description, schema, annotations, cb);
   else server.tool(name, description, schema, cb);
+}
+
+// OS-level keyboard/mouse can control the whole machine, not just the browser, so
+// it is LOCKED by default (least privilege). Unlock per-session with the
+// `enable_os_input` tool (the user just asks in chat), or persistently with
+// GECKO_MCP_ENABLE_OS_INPUT=1. Locked OS tools refuse with a clear message.
+let osInputUnlocked = envCfg("ENABLE_OS_INPUT") === "1";
+function requireOsInput(): ReturnType<typeof errorResult> | null {
+  if (osInputUnlocked) return null;
+  return errorResult(
+    'Real OS keyboard/mouse is LOCKED for safety. To use it, the user must enable it — ' +
+      'they can simply say "enable OS input" (which calls the enable_os_input tool). ' +
+      "Persistent alternative: start gecko-mcp with GECKO_MCP_ENABLE_OS_INPUT=1.",
+  );
 }
 
 /** Resolve a browserId (default: active tab) and run `fn` against an attached
@@ -513,6 +527,8 @@ regTool(
     text: z.string().max(100_000).describe("The text to type via the real keyboard."),
   },
   async ({ text }) => {
+    const lock = requireOsInput();
+    if (lock) return lock;
     try {
       await realType(text);
       return textResult(`Typed (real keyboard): ${text.length} chars.`);
@@ -529,6 +545,8 @@ regTool(
     key: z.string().max(100).describe('Key or combo, e.g. "Enter" or "ctrl+a".'),
   },
   async ({ key }) => {
+    const lock = requireOsInput();
+    if (lock) return lock;
     try {
       await realKey(key);
       return textResult(`Pressed (real keyboard): ${key}`);
@@ -543,6 +561,8 @@ regTool(
   "Select-all + delete via REAL OS keyboard events — reliably clears a focused rich/contenteditable editor (where synthetic Ctrl+A does not work). Focus the field first with `click`. Windows only.",
   {},
   async () => {
+    const lock = requireOsInput();
+    if (lock) return lock;
     try {
       await realClear();
       return textResult("Cleared focused field (real keyboard).");
@@ -821,6 +841,8 @@ regTool(
   "Return Floorp's window rectangle in screen pixels (left, top, right, bottom, width, height). Use this to compute coordinates for move_cursor / real_click. Windows only.",
   {},
   async () => {
+    const lock = requireOsInput();
+    if (lock) return lock;
     try {
       const b = await floorpWindowBounds();
       return textResult(
@@ -840,6 +862,8 @@ regTool(
     y: z.number().int().min(-100_000).max(100_000).describe("Screen Y (pixels)."),
   },
   async ({ x, y }) => {
+    const lock = requireOsInput();
+    if (lock) return lock;
     try {
       await moveCursor(x, y);
       return textResult(`Moved cursor to (${x}, ${y}).`);
@@ -859,12 +883,34 @@ regTool(
     double: z.boolean().optional().describe("Double-click. Default: false."),
   },
   async ({ x, y, button, double }) => {
+    const lock = requireOsInput();
+    if (lock) return lock;
     try {
       await realClick(x, y, { button, double });
       return textResult(`${double ? "Double-" : ""}${button === "right" ? "Right-" : ""}clicked at (${x}, ${y}).`);
     } catch (err) {
       return errorResult((err as Error).message);
     }
+  },
+);
+
+regTool(
+  "enable_os_input",
+  "Unlock the REAL OS keyboard/mouse tools (real_type, real_key, real_clear, move_cursor, real_click, window_bounds) for this session. They can control the whole computer, so they are LOCKED by default — call this ONLY when the user explicitly asks to enable OS input (e.g. they say \"enable OS input\"). Stays unlocked until disable_os_input or a server restart.",
+  {},
+  async () => {
+    osInputUnlocked = true;
+    return textResult('OS keyboard/mouse ENABLED for this session. Run "disable_os_input" to lock it again.');
+  },
+);
+
+regTool(
+  "disable_os_input",
+  "Re-lock the real OS keyboard/mouse tools for this session (undo enable_os_input).",
+  {},
+  async () => {
+    osInputUnlocked = false;
+    return textResult("OS keyboard/mouse LOCKED again.");
   },
 );
 

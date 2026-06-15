@@ -10,6 +10,12 @@
 
 Think "Claude in Chrome", but for the whole Firefox/Gecko family.
 
+> **Cautious about installing this?** Good — you should be. It's small (2 deps, all
+> in [`src/`](src)), the OS keyboard/mouse is **locked by default** (browser-only
+> until you opt in), releases ship with **npm provenance** (verifiable against this
+> source), and the full threat model is in [SECURITY.md](SECURITY.md). Read it
+> before you run `npx gecko-mcp`.
+
 ## How it works
 
 gecko-mcp talks to the browser through one of two backends, picked automatically:
@@ -137,6 +143,18 @@ with a matching `MARIONETTE_PORT`. Force a backend with `GECKO_MCP_BACKEND=mario
 Most tools target the **active tab** by default; pass a `browserId` (from
 `list_tabs`) to target a specific tab.
 
+### OS keyboard & mouse — **locked by default** 🔒
+
+The tools below can affect things *outside* the browser, so they are **disabled
+until you turn them on**. With nothing set, gecko-mcp does browser automation only.
+Unlock them per-session by just asking ("**enable OS input**", which calls the
+`enable_os_input` tool), or persistently with `GECKO_MCP_ENABLE_OS_INPUT=1`. Lock
+again with `disable_os_input`. While locked, these tools refuse with a clear message.
+
+| Tool | What it does |
+|------|--------------|
+| `enable_os_input` / `disable_os_input` | Unlock / re-lock the OS keyboard & mouse tools for this session. |
+
 **Real OS keyboard (Windows)** — for React/rich editors and bot-guarded submits
 that ignore synthetic input:
 
@@ -204,6 +222,10 @@ Understand the threat model before enabling this. Two risks dominate:
 
 Hardening built into this server:
 
+- **OS keyboard/mouse is locked by default (least privilege):** the only tools that
+  can act outside the browser refuse to run until you explicitly unlock them
+  (`enable_os_input` tool, or `GECKO_MCP_ENABLE_OS_INPUT=1`). By default gecko-mcp
+  can only automate the browser, never your wider machine.
 - **Real OS input is double-guarded:** keys/clicks are sent only after verifying
   Floorp is the foreground window, and mouse clicks must land inside Floorp's
   window rectangle — otherwise it aborts *without* sending anything. PowerShell
@@ -256,6 +278,7 @@ untrusted sites unattended.
 | `FLOORP_PATH` | Full path to `floorp.exe` for `launch_floorp`. |
 | `GECKO_MCP_BACKEND` | Force the backend: `floorp` or `marionette`. Default: auto-detect. |
 | `MARIONETTE_PORT` | Marionette TCP port for non-Floorp browsers (default `2828`). |
+| `GECKO_MCP_ENABLE_OS_INPUT` | `1` unlocks the OS keyboard/mouse tools at startup (otherwise locked until the `enable_os_input` tool is called). |
 | `GECKO_MCP_BROWSER_PROCESS` | Process-name regex the real OS keyboard/mouse may target (default covers the common Gecko forks). |
 
 > The legacy `FLOORP_MCP_*` variable names still work as fallbacks (from before the

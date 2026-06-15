@@ -1,0 +1,32 @@
+name: Release
+
+# Publishes to npm with provenance when a v* tag is pushed, so the npm page links
+# to the exact source commit + CI run that built the package (verifiable supply chain).
+# One-time setup: add an npm automation token as the repo secret NPM_TOKEN.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write # required for npm provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # Skips cleanly until you add the NPM_TOKEN secret (no red builds before setup).
+    if: ${{ secrets.NPM_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: "https://registry.npmjs.org"
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -4,6 +4,23 @@ All notable changes to **floorp-mcp** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [2.1.0]
+
+### Security / trust
+- **OS keyboard/mouse is now LOCKED by default (least privilege).** The only tools
+  that can act outside the browser (`real_type`, `real_key`, `real_clear`,
+  `move_cursor`, `real_click`, `window_bounds`) refuse to run until unlocked —
+  per-session via the new **`enable_os_input`** tool (the user just asks), or
+  persistently with `GECKO_MCP_ENABLE_OS_INPUT=1`. Added **`disable_os_input`** to
+  re-lock. With nothing set, gecko-mcp does browser automation only.
+- Added **`SECURITY.md`** (threat model, least-privilege defaults, how to audit
+  before installing) and a "cautious about installing?" note + provenance/source
+  pointers in the README.
+- Added a **provenance release workflow** (`.github/workflows/release.yml`): tagged
+  releases publish to npm with `--provenance` so the npm page links to the exact
+  source commit + CI run. (Requires an `NPM_TOKEN` repo secret; skips cleanly until
+  then.)
+
 ## [2.0.1]
 
 ### Fixed
@@ -179,6 +196,7 @@ All notable changes to **floorp-mcp** are documented here. The format follows
   interaction (`click`, `type_text`, `fill_form`, `press_key`,
   `wait_for_element`, `get_value`). (12 tools.)
 
+[2.1.0]: https://github.com/Frumane/gecko-mcp/releases/tag/v2.1.0
 [2.0.1]: https://github.com/Frumane/gecko-mcp/releases/tag/v2.0.1
 [2.0.0]: https://github.com/Frumane/gecko-mcp/releases/tag/v2.0.0
 [1.8.0]: https://github.com/Frumane/floorp-mcp/releases/tag/v1.8.0
