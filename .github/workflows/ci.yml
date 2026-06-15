@@ -15,13 +15,33 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
       - run: npm ci
       - name: Type-check & build
         run: npm run build
-      - name: Unit tests (no Floorp required)
+      - name: Unit tests (no browser required)
         run: npm test
+
+  integration:
+    name: integration (real Firefox via Marionette)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install Firefox
+        id: firefox
+        uses: browser-actions/setup-firefox@v1
+      - run: npm ci
+      - run: npm run build
+      - name: Drive real Firefox over Marionette (full tool surface)
+        env:
+          FLOORP_PATH: ${{ steps.firefox.outputs.firefox-path }}
+          MOZ_HEADLESS: "1"
+        run: npx tsx test/marionette-tools.ts
