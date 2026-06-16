@@ -24,7 +24,7 @@ let client: BrowserBackend = new FloorpClient();
 
 const server = new McpServer({
   name: "gecko-mcp",
-  version: "2.2.1",
+  version: "2.2.2",
 });
 
 // -- helpers ------------------------------------------------------------------

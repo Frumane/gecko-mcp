@@ -7,13 +7,13 @@
     "url": "https://github.com/Frumane/gecko-mcp",
     "source": "github"
   },
-  "version": "2.2.1",
+  "version": "2.2.2",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "gecko-mcp",
-      "version": "2.2.1",
+      "version": "2.2.2",
       "transport": {
         "type": "stdio"
       }

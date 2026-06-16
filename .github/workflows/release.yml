@@ -36,3 +36,12 @@ jobs:
             exit 0
           fi
           npm publish --provenance --access public
+      - name: Publish to the official MCP Registry (OIDC)
+        # Lists gecko-mcp in registry.modelcontextprotocol.io using GitHub Actions
+        # OIDC — no secret needed. Ownership of the io.github.frumane namespace is
+        # proven by the OIDC token (repo owner == Frumane). Validates server.json
+        # against the npm package's mcpName field.
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish

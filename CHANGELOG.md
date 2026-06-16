@@ -4,6 +4,13 @@ All notable changes to **floorp-mcp** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [2.2.2]
+
+### Added
+- **Auto-publish to the official MCP Registry** — the release workflow now lists
+  gecko-mcp in `registry.modelcontextprotocol.io` on every tag, using GitHub
+  Actions OIDC (no secret). No runtime/tool changes.
+
 ## [2.2.1]
 
 ### Added
