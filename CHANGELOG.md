@@ -4,6 +4,13 @@ All notable changes to **floorp-mcp** are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [2.2.3]
+
+### Fixed
+- Shortened the `server.json` `description` to satisfy the MCP registry's
+  100-character limit (the v2.2.2 registry publish was rejected with HTTP 422;
+  the npm publish was unaffected).
+
 ## [2.2.2]
 
 ### Added

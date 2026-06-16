@@ -2,18 +2,18 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.frumane/gecko-mcp",
   "title": "gecko-mcp",
-  "description": "Control Firefox-based browsers (Floorp, LibreWolf, Zen, Waterfox, Mullvad, Firefox) from any MCP client.",
+  "description": "Control Firefox browsers (Floorp, LibreWolf, Zen, Firefox) from any MCP client.",
   "repository": {
     "url": "https://github.com/Frumane/gecko-mcp",
     "source": "github"
   },
-  "version": "2.2.2",
+  "version": "2.2.3",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "gecko-mcp",
-      "version": "2.2.2",
+      "version": "2.2.3",
       "transport": {
         "type": "stdio"
       }
