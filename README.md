@@ -12,6 +12,14 @@ Think "Claude in Chrome", but for the whole Firefox/Gecko family.
 
 ![Claude driving Floorp via gecko-mcp — opening the GitHub repo and the npm page from a natural-language prompt](docs/demo.gif)
 
+**Get started in ~30 seconds:**
+
+```bash
+npx gecko-mcp setup
+```
+
+Registers gecko-mcp with **Claude Code, Claude Desktop, Cursor, VS Code (Copilot), Windsurf, Zed, Codex** and more — per-project or global. See [Setup](#setup) for manual config and [Requirements](#requirements) for the one-time browser step.
+
 > **Cautious about installing this?** Good — you should be. It's small (2 deps, all
 > in [`src/`](src)), the OS keyboard/mouse is **locked by default** (browser-only
 > until you opt in), releases ship with **npm provenance** (verifiable against this
