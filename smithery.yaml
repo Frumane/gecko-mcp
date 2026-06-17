@@ -1,0 +1,15 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      backend:
+        type: string
+        enum: ["floorp", "marionette"]
+        description: Force a backend. Omit to auto-detect (Floorp HTTP API, else Marionette).
+      port:
+        type: string
+        description: Marionette TCP port (default 2828) when using the Marionette backend.
+  commandFunction:
+    |-
+    config => ({ command: 'npx', args: ['-y', 'gecko-mcp'], env: { ...(config.backend ? { GECKO_MCP_BACKEND: config.backend } : {}), ...(config.port ? { MARIONETTE_PORT: config.port } : {}) } })
